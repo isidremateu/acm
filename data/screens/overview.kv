@@ -1,0 +1,29 @@
+Overview:
+
+
+    canvas:
+#        Color:
+#            rgba: 0,0,1,0.5
+#        Rectangle:
+#            pos: self.pos
+#            size: self.size
+    name: 'Overview'
+    
+    Label:       
+        id:gamma_label
+        font_size:48
+        canvas.after:
+            Color:
+                rgba: 1,0,0,0.5
+            Rectangle:
+                pos: self.pos
+                size: self.size
+        text:'Gamma counts here'
+#        size : self.parent.size[0], self.parent.size[1]/2
+    Label:        
+        id: beta_label
+        font_size:48
+        text: 'Beta counts here' + str(app.index)
+#        size : self.parent.size[0], self.parent.size[1]/2
+
+

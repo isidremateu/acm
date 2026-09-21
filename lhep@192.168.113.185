@@ -1,0 +1,9 @@
+#!/bin/bash
+# Activate the virtual environment
+source kivy_venv/bin/activate
+# Navigate to the directory containing your script
+cd acm
+# Run your Python script
+python3 main_cplusplus.py
+
+

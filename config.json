@@ -1,0 +1,8 @@
+{
+    "data_file": "test.txt",
+    "active_gpio": [5, 6, 13, 21, 19, 26],
+    "sampling_frequency[kHz]": 200,
+    "counting_period[ms]": 1000,
+    "clock_gpio": [],
+    "clock_frequency[Hz]": 10000
+}

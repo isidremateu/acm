@@ -1,0 +1,23 @@
+Sensors:
+    name: 'Sensors'
+    
+    BoxLayout:
+    
+        size_hint: 1, 0.2
+        Label: 
+            text: "Number of sensors"
+        
+        Slider:
+            id: sensors_slider
+            min: 0
+            max: 6
+            step: 1      
+            on_value: root.update_sensors()
+            
+        Label:
+            text: str(int(sensors_slider.value))
+
+    BoxLayout:
+        id: sensors_layout
+        size_hint: 1, 0.8
+        on_width: root.update_sensors()

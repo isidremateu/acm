@@ -15,6 +15,7 @@
 #include <atomic>
 
 
+#define MAX_EVENTS 10000
 #define MAX_GPIOS 40
 
 #define OPT_R_MIN 1
@@ -47,8 +48,10 @@ static std::string g_opt_f;
 static bool subp = false;
 static bool savedata = false;
 
+static uint32_t n_events = 0;
 namespace fs = std::filesystem;
-
+static int channel_array[MAX_EVENTS];
+static uint32_t tick_array[MAX_EVENTS];
 
 
 int width = 10;
@@ -97,7 +100,20 @@ void log_data(const std::string& message) {
             }
         }
        
-        if (not subp) std::cout << "\r" << message << std::flush;
+        //if (not subp) std::cout << "\r" << message << std::flush;
+}
+
+void show_progress(const std::string& message) {
+        
+        /*if (savedata){
+            if (dataFile.is_open()) {
+                dataFile << message << std::endl;
+            } else {
+                std::cerr << "Data file is not open." << std::endl;
+            }
+        }*/
+       
+        std::cout << "\r" << message << std::flush;
 }
 
 
@@ -144,13 +160,14 @@ int writeHeader(){
 
      std::ostringstream  str;
 
-     str << std::setw(width) << std::right << "time[s]";
+     str << std::setw(width) << std::right << "ticks";
+     str << "," << std::setw(width) << std::right << "channel";
     
-     for (int i=0; i<g_num_gpios; i++){
+    /* for (int i=0; i<g_num_gpios; i++){
          std::ostringstream  gpio_str;
          gpio_str << "GPIO_" << g_gpio[i];
          str << "," << std::setw(width) << std::right << gpio_str.str();
-     }
+     }*/
 
     if (savedata){
         if (dataFile.is_open()) {
@@ -338,13 +355,23 @@ int obtainGPIO(int rest, int argc, char *argv[]){
 
 void edges(int gpio, int level, uint32_t tick)
 {
+
+   
    int g;
-   if (g_reset_counts)
+   /*if (g_reset_counts)
    {
       g_reset_counts = 0;
       for (g=0; g<MAX_GPIOS; g++) g_pulse_count[g] = 0;
-   }
-    if (level == 1) g_pulse_count[gpio]++;
+   }*/
+    if (level == 1) {
+        //g_pulse_count[gpio]++;
+        if (n_events< MAX_EVENTS){
+            tick_array[n_events] = tick;
+            channel_array[n_events] = gpio;
+            n_events++;
+        }
+    }
+
 }
 
 
@@ -352,7 +379,7 @@ int main(int argc, char *argv[]){
 
     int rest = initOpts(argc, argv);
     
-    if (subp) {
+    if (subp) {// only in the case it is launched from GUI (subp = True)
         if (createLogFile() < 0) return 1;
         // Start the request handler thread
         std::thread request_thread(handle_requests);
@@ -361,22 +388,22 @@ int main(int argc, char *argv[]){
     
     printout_parameters();
 
-    std::cout << "obtainGPIO" << std::endl;
+    //std::cout << "obtainGPIO" << std::endl;
 
     obtainGPIO(rest, argc, argv);    
 
-    std::cout << "if savedata..." << std::endl;
+    //std::cout << "if savedata..." << std::endl;
 
     
     if (savedata){
-        std::cout << "createDataFile" << std::endl;
+        //std::cout << "createDataFile" << std::endl;
 
         if (createDataFile()<0) return 1;
         if (subp) std::cout << dataFilename << std::endl;
         
     }
 
-    std::cout << "writeHeader" << std::endl;
+    //std::cout << "writeHeader" << std::endl;
 
     
     writeHeader();
@@ -392,8 +419,24 @@ int main(int argc, char *argv[]){
         }
     
     g_reset_counts = 1;
+    uint32_t n_events_written = 0;
     while (true){
-        std::ostringstream  result;
+
+
+        for (int i = n_events_written; i < n_events; i++){
+            std::ostringstream  result;
+            result << std::setw(width) << std::right << tick_array[i];
+            result << "," << std::setw(2) << std::right << channel_array[i];
+            std::ostringstream  display_text;
+            display_text << n_events_written << " / " << MAX_EVENTS;
+            
+            log_data(result.str());
+            show_progress(display_text.str());
+            n_events_written++;
+        }
+
+        /*
+        std::ostringstream result;
         auto time_now = std::chrono::system_clock::now();
         double elapsed_seconds = std::chrono::duration<double>(time_now - start_time).count();
 
@@ -401,24 +444,32 @@ int main(int argc, char *argv[]){
          for (int i=0; i<g_num_gpios; i++){
              result << "," << std::setw(width) << std::right << g_pulse_count[g_gpio[i]];    
          }
-         
+        */
+        
+        
         if(exit_condition){
         
             std::cout << "exit condition received" << std::endl;
             break;
         }
+
+        if(n_events_written >= MAX_EVENTS) {
+            std::cout << "Max events reached" << std::endl;
+            break;
+
+        }
         
         // Check if a request has been received
-        if (request_received) {
+        /*if (request_received) {
             request_received = false;  // Reset the flag
             std::cout << result.str() << std::endl;
             std::flush(std::cout);  // Ensure the output is sent immediately
-        }
+        }*/
         
         
         
-        log_data(result.str());
-        g_reset_counts = 1;
+        //log_data(result.str());
+        //g_reset_counts = 1;
         
         
         
